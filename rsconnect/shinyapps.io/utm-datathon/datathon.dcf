@@ -1,0 +1,13 @@
+name: datathon
+title: datathon
+username: utm-datathon
+account: utm-datathon
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10392260
+bundleId: 7880642
+url: https://utm-datathon.shinyapps.io/datathon/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData
