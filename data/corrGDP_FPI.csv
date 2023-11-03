@@ -1,0 +1,37 @@
+Country,Variables,Correlation
+China,Crops,0.9184
+Indonesia,Crops,0.9593
+Japan,Crops,-0.7959
+Malaysia,Crops,0.4205
+Myanmar,Crops,0.737958
+Singapore,Crops,-0.14232
+SriLanka,Crops,0.709995
+Thailand,Crops,0.877305
+UAE,Crops,-0.4521
+UK,Crops,-0.6405
+USA,Crops,0.5961
+Vietnam,Crops,0.8639
+China,Food,0.8708
+Indonesia,Food,0.9036
+Japan,Food,-0.7899
+Malaysia,Food,0.1346
+Myanmar,Food,0.787637
+Singapore,Food,-0.65486
+SriLanka,Food,0.839176
+Thailand,Food,0.868703
+UAE,Food,-0.4695
+UK,Food,-0.8783
+USA,Food,0.7666
+Vietnam,Food,0.8868
+China,Fruits and Vegetables,0.9007
+Indonesia,Fruits and Vegetables,0.8804
+Japan,Fruits and Vegetables,-0.7873
+Malaysia,Fruits and Vegetables,-0.6017
+Myanmar,Fruits and Vegetables,0.833685
+Singapore,Fruits and Vegetables,-0.08068
+SriLanka,Fruits and Vegetables,0.363071
+Thailand,Fruits and Vegetables,0.5156
+UAE,Fruits and Vegetables,-0.4488
+UK,Fruits and Vegetables,-0.8534
+USA,Fruits and Vegetables,-0.6064
+Vietnam,Fruits and Vegetables,0.9566
