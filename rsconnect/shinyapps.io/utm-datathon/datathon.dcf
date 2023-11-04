@@ -5,9 +5,9 @@ account: utm-datathon
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 10392260
-bundleId: 7884403
+bundleId: 7887092
 url: https://utm-datathon.shinyapps.io/datathon/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: .RData|data/mys_relative_wealth_index.csv
+ignoredFiles: .RData

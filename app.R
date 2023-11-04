@@ -6,8 +6,13 @@ library(leaflet)
 library(shiny)
 library(dplyr)
 library(sf)
-library(MASS)
-library(psych)
+library(FAOSTAT)
+library(wbstats)
+library(tmaptools)
+library(ggplot2)
+library(ggrepel)
+library(data.table)
+library(plotly)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -50,21 +55,52 @@ ui <- fluidPage(
 
     tabPanel("Results & Map",
              h1("Result & Map"),
-             p("Discussion here..Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-               Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
-               when an unknown printer took a galley of type and scrambled it to make a type specimen book.
-               It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.
-               It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages,
-               and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."),
+             h3(HTML("<b>a) Interpretations of positive correlation between GDP and agricultural:</b>")),
+             p("A positive correlation between GDP and food, crops, and vegetable production in selected countries would imply a direct relationship where higher economic output (GDP) aligns with increased agricultural productivity. Here are some potential indications or implications of a positive correlation:"),
              br(),
-             p("Put dashboards here..."),
+             tags$div(tags$ol(
+               tags$li(HTML("<b>Economic Contribution:</b> It could suggest that the agricultural sector significantly contributes to the overall economic growth of these countries. Higher agricultural output might be a fundamental driver of economic expansion.")),
+               tags$li(HTML("<b>Employment and Income Generation:</b> A positive correlation might indicate that agriculture is a significant source of employment and income for these countries. A thriving agricultural sector could mean more jobs and increased income for the population.")),
+               tags$li(HTML("<b>Food Security:</b> Higher agricultural production linked to GDP might imply increased food security within these countries. It suggests a nation's ability to meet its population's nutritional needs and potentially export surplus produce to other regions.")),
+               tags$li(HTML("<b>Diversification and Resilience:</b> A positive correlation may indicate that these countries have a more diversified and resilient economy, as they do not solely rely on non-agricultural sectors for growth. A strong agricultural base can stabilize the economy against fluctuations in other industries.")),
+               tags$li(HTML("<b>Technology and Innovation:</b> High-GDP countries with a positive correlation might be using technological advancements and innovation in agriculture, leading to increased productivity and higher-quality produce.")),
+               tags$li(HTML("<b>Export Potential:</b> It could also mean that these countries have the capacity to export surplus agricultural products, contributing to international trade and potentially improving their balance of trade."))
+             )),
+             br(),
+             p("These indications might not be applicable universally to all the countries in the dataset. A positive correlation between GDP and agricultural production signifies a strong relationship, indicating the significance of the agricultural sector in the economic development of these countries. However, a comprehensive analysis is necessary to comprehend the specifics and reasons behind these relationships within each country."),
+             br(),
+             h3(HTML("<b>b) Interpretations of negative correlation between GDP and agricultural:</b>")),
+             p("A negative correlation between GDP and food, crops, and vegetables production in selected countries would suggest an inverse relationship between the economic output (GDP) and the volume or quality of agricultural production."),
+             p("Here are a few potential indications or implications of a negative correlation:"),
+             tags$div(tags$ol(
+               tags$li(HTML("<b>Economic Structure:</b> It might suggest that countries with higher GDP levels are less reliant on agriculture for their economic growth. Instead, they might have more diversified economic structures with a greater emphasis on manufacturing, services, or other industries.")),
+               tags$li(HTML("<b>Import Dependency:</b> A negative correlation could indicate that high-GDP countries might be relying more on imports for their food supply rather than producing it domestically. They may prioritize other sectors over agriculture due to higher labor costs, land scarcity, or technological advancements in other industries.")),
+               tags$li(HTML("<b>Technological Advancements:</b> Wealthier nations might use technological advancements and innovations to streamline agricultural processes, leading to increased productivity with fewer resources. As a result, they could produce more with less land and labor compared to lower GDP countries.")),
+               tags$li(HTML("<b>Market Dynamics:</b> High-GDP countries may have different consumption patterns. They might focus more on higher-value agricultural products, such as specialty crops or organic foods, which could result in smaller quantities produced but with higher market value.")),
+               tags$li(HTML("<b>Environmental Impact:</b> In some cases, a negative correlation might suggest that high-GDP countries have shifted focus away from traditional agriculture due to environmental concerns, urbanization, or land conservation efforts, impacting the overall agricultural production levels."))
+             )),
+             br(),
+             p("These indications can vary and might not apply universally to all the countries in the dataset. Negative correlations between GDP and agricultural production can point towards complex socio-economic, technological, and market-driven dynamics, and further in-depth analysis is essential to understand the specific reasons behind such relationships within each country."),
              navbarPage("Graphs",
                         tabPanel("Map",
                                  leafletOutput("dashboard")),
-                        tabPanel("Charts",
+                        tabPanel("Correlation",
                                  plotOutput("corr")),
+                        tabPanel("Time Series",
+                                 plotlyOutput("fpiseries"),
+                                 plotlyOutput("gdpseries")),
                         tabPanel("Tables",
-                                 tableOutput("dataset")))),
+                                 tableOutput("dataset"))),
+             flowLayout(
+               radioButtons("item",label = h4("Food Production"), choices = c("Crops"="Crops", "Food"="Food", "Vegetables and Fruit Primary"="Vegetables and Fruit Primary"), selected="Crops"),
+               sliderInput("year_select",label = h4("Year Selection"), min = 1985, max = 2020, value = c(1985,2020)),
+               checkboxGroupInput("cc", label = h4("Country"), inline = TRUE, choices = c("United States"="United States", "United Kingdom"="United Kingdom",
+                                                                            "United Arab Emirates"="United Arab Emirates", "China"="China", "Indonesia"="Indonesia",
+                                                                            "Japan"="Japan", "Malaysia"="Malaysia", "Myanmar"="Myanmar", "Singapore"="Singapore",
+                                                                            "Sri Lanka"="Sri Lanka", "Thailand"="Thailand", "Viet Nam"="Viet Nam"),selected = "United States")
+             ),
+             br(),
+             actionButton("refresh_data", "Refresh datasets")),
 
     tabPanel("Datasets & References",
              withMathJax(),
@@ -87,26 +123,89 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output, session){
+  vec_breaks <- c(     0,        1)
+  vec_rgb    <- c("#b51224", "#005c37")
+
+  corr.df <- reactive({
+    case_when(
+      input$item == "Crops" ~ corr_table(input$year_select[1], input$year_select[2])$crop,
+      input$item == "Food" ~ corr_table(input$year_select[1], input$year_select[2])$food,
+      input$item == "Vegetables and Fruit Primary" ~ corr_table(input$year_select[1], input$year_select[2])$veg,
+      .default = NA)
+  })
+
+  ts.df <- reactive({
+    ts_table(input$year_select[1], input$year_select[2], input$cc, input$item)
+  })
 
   # dashboard
   output$dashboard <- renderLeaflet({
-    leaflet() %>%
-      addProviderTiles(providers$Stamen.TonerLite,
-                       options = providerTileOptions(noWrap = TRUE))
+    locs <- readRDS("data/coord.rds")
+    df <- corr.df()
+    for(i in 1:length(df)){
+      df$colour[i] <- vec_rgb[min(which(vec_breaks > df$correlation[i]))]
+    }
+    df <- merge(df, locs, by = "ISO3", all.x = TRUE) %>% st_as_sf()
+    labels <- sprintf(
+      "<strong>%s</strong><br/>%g Pearson Coeff.",
+      df$Country, round(df$correlation,2)
+    ) %>% lapply(HTML)
+    leaflet(df) %>% addTiles() %>% setView( lat=10, lng=0 , zoom=2) %>%
+      addPolygons(fillColor = ~colour, weight = 1,
+                  opacity = 1,
+                  color = "white",
+                  dashArray = "2",
+                  fillOpacity = 0.85,
+                  highlightOptions = highlightOptions(
+                    weight = 1.3,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 1,
+                    bringToFront = TRUE),
+                  label = labels,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto"))
   })
 
   # correlation
   output$corr <- renderPlot({
-    test <- mvrnorm(200, mu = c(2,5,3), Sigma = matrix(c(10,5,2,10,5,2,4,4,1), ncol=3))
-    colnames(test) <- c("x","y","z")
-    test %>% pairs
+    ggplot(corr.df(), aes(x=correlation, y=avg_gdp, fill = Country)) +
+      geom_point(aes(size = avg_gdp), shape = 21) +
+      geom_text_repel(aes(label=Country), size=5) +
+      theme(legend.position = "none")
+  })
+
+  # time series
+  output$fpiseries <- renderPlotly({
+    p1 <- ggplot(ts.df(), aes(x=Year, y=FPI, color = Country)) +
+      geom_line() +
+      ggtitle("Time Series of Indices") +
+      theme(legend.position = "top")
+    ggplotly(p1)
+  })
+
+  output$gdpseries <- renderPlotly({
+    p2 <- ggplot(ts.df(), aes(x=Year, y=GDP, color = Country)) +
+      geom_line() +
+      theme(legend.position = "top")
+    ggplotly(p2)
   })
 
   # table
   output$dataset <- renderTable({
-    df <- read.csv("data/corrGDP_FPI.csv")
-    colnames(df) <- c("Country","Production","Correlation")
-    df
+    corr.df()
+  })
+
+  # refresh datasets
+  observeEvent(input$refresh_data,{
+    update_fao_data()
+    clean_fao_data()
+    update_wdi_data()
+    update_main_data()
+    session$sendCustomMessage(type = 'testmessage',
+                              message = 'Datasets are downloading')
   })
 }
 
