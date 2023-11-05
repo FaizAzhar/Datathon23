@@ -5,7 +5,7 @@ account: utm-datathon
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 10392260
-bundleId: 7887092
+bundleId: 7891867
 url: https://utm-datathon.shinyapps.io/datathon/
 version: 1
 asMultiple: FALSE

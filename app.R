@@ -13,11 +13,12 @@ library(ggplot2)
 library(ggrepel)
 library(data.table)
 library(plotly)
+library(raster)
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   titlePanel(HTML("<b>Datathon Submission</b>")),
-  titlePanel(h4(HTML("<b>Team Name</b><p>3 November 2023</p>"))),
+  titlePanel(h4(HTML("<b>UTM</b><p>6 November 2023</p>"))),
 
   navlistPanel(
     widths = c(2,10),
@@ -40,16 +41,13 @@ ui <- fluidPage(
              h1("Methodology"),
              p("When investigating the correlation between GDP and gross production in a methodology section, several key elements should be included to ensure the clarity and reproducibility of the research. Here are the specific points to address in the methodology section:"),
              tags$div(tags$ol(
-               tags$li(HTML("<b>Research Objective and Hypotheses:</b><p>Clearly state the research aim, which is to explore the correlation between GDP and gross production. Define any specific hypotheses or expectations regarding the relationship between these variables.</p>")),
-               tags$li(HTML("<b>Data Sources and Collection:</b><p>Detail the specific sources from which GDP and gross production data were obtained. This may include government reports, national statistical agencies, international databases (such as the World Bank, IMF, or other reputable sources), or any other relevant sources. Mention the time frame or period covered by the data.</p>")),
-               tags$li(HTML("<b>Variables and Measurements:</b><p>Clearly define GDP and gross production as variables, specifying how they were measured or calculated. This might involve detailing the components included in GDP (consumption, investment, government spending, and net exports) and explaining what's encompassed in the gross production metric.</p>")),
-               tags$li(HTML("<b>Country Selection and Sample:</b><p>Justify the selection of countries for the study, outlining the criteria for inclusion. This might include factors like geographic representation, economic diversity, or data availability. Detail the list of countries included and why they are pertinent to the study.</p>")),
-               tags$li(HTML("<b>Data Analysis Techniques:</b><p>Explain the statistical methods used to analyze the correlation between GDP and gross production. For correlation analysis, mention the specific statistical tools used (such as the Pearson correlation coefficient) and justify the choice of these methods.</p>")),
-               tags$li(HTML("<b>Data Processing and Preprocessing:</b><p>Describe how the raw data were processed, organized, and cleaned to ensure accuracy and consistency. Mention any adjustments or transformations applied to the data before conducting the correlation analysis.</p>")),
-               tags$li(HTML("<b>Assumptions and Limitations:</b><p>Address any assumptions made during the analysis, and discuss the limitations of the study. These might include data constraints, potential biases, assumptions in the correlation analysis, or other factors that might affect the interpretation of results.</p>")),
-               tags$li(HTML("<b>Validity and Reliability:</b><p>Discuss the steps taken to ensure the validity and reliability of the analysis, such as cross-verification of data sources, sensitivity analysis, or other validation techniques.</p>")),
-               tags$li(HTML("<b>Ethical Considerations:</b><p>Address any ethical considerations taken into account during data collection and analysis, especially when using sensitive or proprietary data.</p>")),
-               tags$li(HTML("<b>Research Procedure Timeline:</b><p>Provide a timeline indicating the sequence of steps in the research process, from data collection to analysis and interpretation.</p>"))
+               tags$li(HTML("<b>Data Sources and Collection:</b><p>Two separate datasets are used in this study which are <a href='https://www.fao.org/faostat/en/#data/QI'>Food Production Index</a> extracted from the website Food and Agriculture Organization of United Nations and <a href='https://ourworldindata.org/food-supply'>Gross Domestic Product Index</a> from the website Our World in Data</p>")),
+               tags$li(HTML("<b>Research Objective and Hypotheses:</b><p>These indexes are yearly time series data covering from Year 1985 until Year 2020. Our main aim is to compare the trend of FPI and GDP of Malaysia with the neighbouring countries such as Singapore, Thailand, Indonesia, and other developing countries Myanmar, Vietnam, Sri Lanka, and some other developed countries China, Japan, the United Kingdom (UK), United Arab Emirates (UAE), United States of America (USA). Exploring the trend of the indexes throughout these years provide insight on how the production of food for certain countries contributes to the GDP index per capita. Therefore, investigating the correlation between these two indexes guide us to determine the strength of relationship between the countries’ source of production with GDP. This also highlights the importance of agriculture to the overall economy of a country and can be used for ensuring the food security of the region.</p>")),
+               tags$li(HTML("<b>Variables and Measurements:</b><p>Gross Domestic Product is a total of consumer spending, business investment, government spending and net exports. Since our study covers many countries thus we used GDP per capita in which the country’s GDP is divided by the total population.</p><p>Food Production Index used involved three main products which are crops, food and vegetables and fruits.</p>")),
+               tags$li(HTML("<b>Country Selection:</b><p>We have randomly selected few countries in Asia including both developing and developed countries and some other high-income countries for this analysis in which the data is publicly available.</p>")),
+               tags$li(HTML("<b>Data Analysis Techniques:</b><p>For preliminary exploration, we have used Microsoft Excel to calculate the Pearson Correlation Coefficient to describe the strength of relationship between these two indexes.</p>")),
+               tags$li(HTML("<b>Data Processing and Preprocessing:</b><p>Using the Food and Agriculture Organization of United Nations and Our World in Data databases, we prepared R scripts to retrieve/clean/analyze the datasets before supplying the clean data into this interactive report. The datasets can be retrieved using the <a href='https://cran.r-project.org/web/packages/wbstats/index.html'>'wbstats'</a> and <a href='https://cran.r-project.org/web/packages/FAOSTAT/index.html'>'FAOSTAT'</a> R package.</p>")),
+               tags$li(HTML("<b>Validity and Reliability:</b><p>We only provide a general interpretation on the correlation between the FPI and GDP based on the year 1985 until 2020. Reader should also be able to obtain other insights by tweaking the widgets in the map and charts.</p>")),
              )),
              tags$figure(class = "centerFigure", tags$img(src = "methods.png", height = 300, width = 750), tags$figcaption("Source: Google Images"))),
 
@@ -83,42 +81,72 @@ ui <- fluidPage(
              p("These indications can vary and might not apply universally to all the countries in the dataset. Negative correlations between GDP and agricultural production can point towards complex socio-economic, technological, and market-driven dynamics, and further in-depth analysis is essential to understand the specific reasons behind such relationships within each country."),
              navbarPage("Graphs",
                         tabPanel("Map",
-                                 leafletOutput("dashboard")),
+                                 leafletOutput("dashboard"),
+                                 column(4,htmlOutput('ui_county'), height = 300),
+                                 column(6,uiOutput('landuse'))
+                                 ),
                         tabPanel("Correlation",
                                  plotOutput("corr")),
                         tabPanel("Time Series",
+                                 checkboxGroupInput("cc", label = h4("Country"), inline = TRUE, choices = c("United States"="United States", "United Kingdom"="United Kingdom",
+                                                                            "United Arab Emirates"="United Arab Emirates", "China"="China", "Indonesia"="Indonesia",
+                                                                            "Japan"="Japan", "Malaysia"="Malaysia", "Myanmar"="Myanmar", "Singapore"="Singapore",
+                                                                            "Sri Lanka"="Sri Lanka", "Thailand"="Thailand", "Viet Nam"="Viet Nam"),selected = "United States"),
                                  plotlyOutput("fpiseries"),
                                  plotlyOutput("gdpseries")),
                         tabPanel("Tables",
                                  tableOutput("dataset"))),
              flowLayout(
                radioButtons("item",label = h4("Food Production"), choices = c("Crops"="Crops", "Food"="Food", "Vegetables and Fruit Primary"="Vegetables and Fruit Primary"), selected="Crops"),
-               sliderInput("year_select",label = h4("Year Selection"), min = 1985, max = 2020, value = c(1985,2020)),
-               checkboxGroupInput("cc", label = h4("Country"), inline = TRUE, choices = c("United States"="United States", "United Kingdom"="United Kingdom",
-                                                                            "United Arab Emirates"="United Arab Emirates", "China"="China", "Indonesia"="Indonesia",
-                                                                            "Japan"="Japan", "Malaysia"="Malaysia", "Myanmar"="Myanmar", "Singapore"="Singapore",
-                                                                            "Sri Lanka"="Sri Lanka", "Thailand"="Thailand", "Viet Nam"="Viet Nam"),selected = "United States")
-             ),
+               sliderInput("year_select",label = h4("Year Selection"), min = 1985, max = 2020, value = c(1985,2020))
+               ),
              br(),
-             actionButton("refresh_data", "Refresh datasets")),
+             actionButton("refresh_data", "Refresh datasets (for developer only)")),
 
     tabPanel("Datasets & References",
              withMathJax(),
              h1('Datasets & References'),
-             p("Lists below are the datasets & references that we used to produced the map & report:"),
+             p("Lists below are the datasets & references that we used to produced the interactive map & report:"),
              br(),
              p(class = 'hangingindent', "Food Production Indicators, Food and Agricultural Organization of the United Nations", tags$a(href = "https://www.fao.org/faostat/en/#data/QI", "[link]")),
-             p(class = 'hangingindent', "DOSM (Department of Statistics Malaysia) ", tags$a(href = "https://www.dosm.gov.my/", "[link]"))),
+             p(class = 'hangingindent', "Our World in Data ", tags$a(href = "https://ourworldindata.org/food-supply", "[link]")),
+             p(class = 'hangingindent', "Kaelin, A. et al.(2018). A land use map of Peninsular Malaysia for the year 2018 (25m grid) - data.gov.uk. Dataset - data.gov.uk. (2023b, February 16). https://ckan.publishing.service.gov.uk/dataset/a-land-use-map-of-peninsular-malaysia-for-the-year-2018-25m-grid ", tags$a(href = "https://www.data.gov.uk/dataset/49c47b79-8d19-4c6f-8a45-f63eb4f34107/a-land-use-map-of-peninsular-malaysia-for-the-year-2018-25m-grid", "[link]")),
+             p(class = 'hangingindent', "Stackoverflow Community ", tags$a(href = "https://stackoverflow.com", "[link]")),
+             p(class = 'hangingindent', "Shiny Posit Team ", tags$a(href = "https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/index.html", "[link]"))),
 
     tabPanel("About us",
              h1("About us"),
-             p("Discussion here..Lorem Ipsum is simply dummy text of the printing and typesetting industry.
-               Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
-               when an unknown printer took a galley of type and scrambled it to make a type specimen book.
-               It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.
-               It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages,
-               and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."))
-  )
+             column(4,
+                    tags$figure(class = "centerFigure", tags$img(src = "Dr_Adina_Najwa.png", height = 200, width = 140)),
+                    h5("Dr. Adina Najwa Kamarudin"),
+                    br(),br(),
+                    tags$figure(class = "centerFigure", tags$img(src = "siti_rohani_mohd_nor.png", height = 200, width = 130)),
+                    h5("Dr. Siti Rohani Mohd Nor"),
+                    br(),br(),
+                    tags$figure(class = "centerFigure", tags$img(src = "siti_mariam.png", height = 200, width = 140)),
+                    h5("Dr. Siti Mariam Norrulashikin"),
+                    br(),br(),
+                    tags$figure(class = "centerFigure", tags$img(src = "nur-arina-BK-pp-noBG.png", height = 200, width = 160)),
+                    h5("Dr. Nur Arina Bazilah Kamisan"),
+                    br(),br(),
+                    tags$figure(class = "centerFigure", tags$img(src = "Faiz.png", height = 200, width = 160)),
+                    h5("Ahmad Faiz Mohd Azhar"),
+                    br(),br()
+                    ),
+             column(6,
+                    h5(HTML("<br></br><br></br><br></br>Senior Lecturer in Statistics<br></br>Department of Mathematical Sciences<br></br>Faculty of  Science Universiti Teknologi Malaysia<br></br><br></br><br></br>")),
+                    h5(HTML("<br></br><br></br><br></br><br></br>Senior Lecturer in Statistics<br></br>Department of Mathematical Sciences<br></br>Faculty of  Science Universiti Teknologi Malaysia<br></br><br></br><br></br>")),
+                    h5(HTML("<br></br><br></br><br></br>Senior Lecturer in Statistics<br></br>Department of Mathematical Sciences<br></br>Faculty of  Science Universiti Teknologi Malaysia<br></br><br></br><br></br>")),
+                    h5(HTML("<br></br><br></br><br></br><br></br>Senior Lecturer in Statistics<br></br>Department of Mathematical Sciences<br></br>Faculty of  Science Universiti Teknologi Malaysia<br></br><br></br><br></br>")),
+                    h5(HTML("<br></br><br></br><br></br>Master Candidate in Mathematics<br></br>Faculty of  Science Universiti Teknologi Malaysia<br></br><br></br><br></br>"))
+                    ))
+  ),
+  hr(),
+  HTML("MIT License<br></br>
+        Copyright (c) 2023 [Adina Najwa Kamarudin, Siti Rohani Mohd Nor, Siti Mariam Norrulashikin, Nur Arina Bazilah Kamisan, Ahmad Faiz Mohd Azhar]<br></br>
+        Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br></br>
+        The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br></br>
+        THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.")
 )
 
 # Define server logic required to draw a histogram
@@ -138,11 +166,11 @@ server <- function(input, output, session){
     ts_table(input$year_select[1], input$year_select[2], input$cc, input$item)
   })
 
+  locs <- readRDS("data/coord.rds")
   # dashboard
   output$dashboard <- renderLeaflet({
-    locs <- readRDS("data/coord.rds")
     df <- corr.df()
-    for(i in 1:length(df)){
+    for(i in 1:nrow(df)){
       df$colour[i] <- vec_rgb[min(which(vec_breaks > df$correlation[i]))]
     }
     df <- merge(df, locs, by = "ISO3", all.x = TRUE) %>% st_as_sf()
@@ -150,7 +178,7 @@ server <- function(input, output, session){
       "<strong>%s</strong><br/>%g Pearson Coeff.",
       df$Country, round(df$correlation,2)
     ) %>% lapply(HTML)
-    leaflet(df) %>% addTiles() %>% setView( lat=10, lng=0 , zoom=2) %>%
+    leaflet(df) %>% addTiles('http://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png') %>% setView( lat=10, lng=0 , zoom=2) %>%
       addPolygons(fillColor = ~colour, weight = 1,
                   opacity = 1,
                   color = "white",
@@ -166,7 +194,32 @@ server <- function(input, output, session){
                   labelOptions = labelOptions(
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
-                    direction = "auto"))
+                    direction = "auto"),
+                  layerId = paste(df$ISO3,' | ',df$Country))
+  })
+
+  ## output: geo info of the mouse event
+  output$ui_county <- renderUI({
+      map_land_shape_click_info <- input$dashboard_shape_click
+      if (!is.null(map_land_shape_click_info$id)){
+      HTML(paste(h3(map_land_shape_click_info$id),
+                 pre(paste('latitude :',round(map_land_shape_click_info$lat,4)),
+                     paste('longitude:', round(map_land_shape_click_info$lng,4)))))
+      }else{
+        h5('Click on the map to see geological information.')
+      }
+  })
+
+  ## output: landuse
+  output$landuse <- renderUI({
+    map_land_shape_click_info <- input$dashboard_shape_click
+    if (!is.null(map_land_shape_click_info$id)){
+      country <- substr(map_land_shape_click_info$id, start=1, stop=3)
+      case_when(
+        country == 'MYS' ~ HTML("<img src = \"MYS.png\" height=75%>"),
+        .default = NA
+      )
+    }
   })
 
   # correlation
