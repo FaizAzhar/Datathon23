@@ -3,4 +3,4 @@ This repo is created to store R scripts to run and deploy dashboards on Shiny Ap
 
 ## App Link
 For those who want to see the deployed app that our team created, please click the link below:
-[UTM Datathon 23](https://utm-datathon.shinyapps.io/datathon/)
+1. [UTM Datathon 23](https://utm-datathon.shinyapps.io/datathon/)
